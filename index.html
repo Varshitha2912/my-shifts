@@ -1,0 +1,1091 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>My Shifts</title>
+<meta name="description" content="Track your shifts, pay and gym across all your jobs. Enter a shift once and everything else updates.">
+<meta name="theme-color" content="#14213D">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="My Shifts">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F3F5F8; --surface:#FFFFFF; --ink:#14213D; --ink-2:#44546E; --muted:#74839B; --line:#DDE3EB;
+  --hivis:#FFD43B; --navy:#14213D;
+  --good:#2B8A3E; --bad:#D6336C; --warn:#E67700; --gym:#9C36B5;
+  --sel-bg:var(--ink); --sel-fg:var(--paper);
+  --font:'Barlow',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --font-c:'Barlow Condensed','Arial Narrow',system-ui,-apple-system,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root{--paper:#0D1625;--surface:#152238;--ink:#E8EDF5;--ink-2:#B3C0D4;--muted:#8090A8;--line:#26354F;
+    --good:#51CF66;--bad:#F06595;--warn:#FFA94D;--today-mix:10%;color-scheme:dark}
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.45 var(--font);-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;-webkit-tap-highlight-color:transparent}
+:focus-visible{outline:3px solid var(--warn);outline-offset:2px}
+.wrap{max-width:560px;margin:0 auto;padding:14px 16px calc(104px + env(safe-area-inset-bottom))}
+h1{font:600 30px/1.1 var(--font-c);margin:6px 0 16px}
+h2{font:600 21px/1.2 var(--font-c);margin:30px 0 10px;display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+h2 .side{font:500 15px var(--font);color:var(--ink-2)}
+p{margin:0 0 10px}
+.num{font-family:var(--font-c);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.small{font-size:14px}
+.hint{font-size:14px;color:var(--ink-2);margin-top:8px}
+a{color:inherit}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:12px;padding:11px 16px;min-height:46px;font-weight:600;background:var(--ink);color:var(--paper)}
+.btn.ghost{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line)}
+.btn.hv{background:var(--hivis);color:var(--navy)}
+.btn.danger{background:transparent;color:var(--bad);box-shadow:inset 0 0 0 1.5px var(--bad)}
+.btn.block{width:100%}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.sm{min-height:38px;padding:7px 12px;font-size:15px;border-radius:10px}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+.linkbtn{background:none;border:0;padding:4px 0;font-weight:600;color:var(--ink);text-decoration:underline;text-underline-offset:3px}
+
+/* next-up card: the hero */
+.next{position:relative;background:var(--hivis);color:var(--navy);border-radius:18px;padding:26px 18px 18px;overflow:hidden}
+.next::before{content:"";position:absolute;left:0;right:0;top:0;height:9px;background:repeating-linear-gradient(-45deg,var(--navy) 0 9px,transparent 9px 18px)}
+.next .lbl{font-weight:600;font-size:15px;display:flex;justify-content:space-between;gap:8px}
+.next .job{font:700 44px/1 var(--font-c);margin:6px 0 4px;display:flex;align-items:center;gap:10px}
+.next .job i{flex:0 0 auto;width:16px;height:16px;border-radius:50%;background:var(--c);box-shadow:0 0 0 2.5px var(--navy)}
+.next .when{font:600 24px/1.15 var(--font-c)}
+.next .meta{margin-top:4px;font-size:15px}
+.next .note{margin-top:8px;font-size:15px;font-style:italic}
+.next .btns{margin-top:14px}
+.next .btn{background:var(--navy);color:#fff}
+.next .btn.ghost{background:transparent;color:var(--navy);box-shadow:inset 0 0 0 1.5px var(--navy)}
+.next.empty{padding-bottom:20px}
+.next.empty .job{font-size:30px}
+
+/* money + progress */
+.money{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.money .big{font:700 46px/1 var(--font-c);font-variant-numeric:tabular-nums}
+.money .of{color:var(--ink-2)}
+.bar{height:14px;border-radius:7px;background:var(--line);overflow:hidden;display:flex;margin:10px 0 6px}
+.bar.thin{height:8px;border-radius:4px;margin:6px 0 2px}
+.bar .e{background:var(--ink)}
+.bar .b{background:repeating-linear-gradient(-45deg,var(--ink) 0 3px,transparent 3px 7px);opacity:.5}
+.bar.hit .e{background:var(--good)}
+.legend{display:flex;gap:14px;font-size:13px;color:var(--ink-2);flex-wrap:wrap}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--ink);margin-right:5px;vertical-align:-1px}
+.legend i.b{background:repeating-linear-gradient(-45deg,var(--ink) 0 2px,transparent 2px 4px);opacity:.6}
+.stat-line{display:flex;justify-content:space-between;gap:8px;font-size:15px;margin-top:2px}
+.callout{margin-top:10px;font-size:15px}
+.callout b{font-family:var(--font-c);font-size:18px}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.kv{padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+.kv .k{font-size:13px;color:var(--ink-2)}
+.kv .v{font:700 26px/1.1 var(--font-c);font-variant-numeric:tabular-nums;margin-top:2px}
+
+/* gym dots */
+.gym{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.dots{display:flex;gap:6px;align-items:center}
+.dots span{width:18px;height:18px;border-radius:50%;box-shadow:inset 0 0 0 2px var(--gym)}
+.dots span.on{background:var(--gym)}
+.dots span.pl{background:repeating-linear-gradient(-45deg,var(--gym) 0 2px,transparent 2px 5px)}
+
+/* lists */
+.list{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.dayhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:10px 14px 6px;background:var(--paper);border-top:1px solid var(--line);font-weight:600;font-size:15px}
+.list>.dayhead:first-child{border-top:0}
+.row{display:grid;grid-template-columns:5px 1fr auto;gap:12px;align-items:center;width:100%;padding:11px 14px 11px 0;background:none;border:0;border-top:1px solid var(--line);text-align:left}
+.dayhead+.row,.list>.row:first-child{border-top:0}
+.row .cb{align-self:stretch;background:var(--c);border-radius:0 4px 4px 0}
+.row .t{font-weight:600}
+.row .s{font-size:14px;color:var(--ink-2)}
+.row .p{font:600 21px var(--font-c);text-align:right;font-variant-numeric:tabular-nums}
+.row.is-cancelled .t,.row.is-cancelled .p{text-decoration:line-through;color:var(--muted)}
+.row.is-missed .p{color:var(--bad);text-decoration:line-through}
+.empty-row{padding:12px 14px;color:var(--muted);font-size:15px;display:flex;justify-content:space-between;align-items:center}
+.tag{display:inline-block;font-size:12px;font-weight:600;padding:1px 8px;border-radius:999px;margin-left:6px;vertical-align:1px;white-space:nowrap}
+.tag.now{background:var(--hivis);color:var(--navy)}
+.tag.clash{background:var(--bad);color:#fff}
+.tag.missed{color:var(--bad);box-shadow:inset 0 0 0 1.5px var(--bad)}
+.tag.done{color:var(--good);box-shadow:inset 0 0 0 1.5px var(--good)}
+.tag.unconfirmed{color:var(--warn);box-shadow:inset 0 0 0 1.5px var(--warn)}
+.tag.cancelled{color:var(--muted);box-shadow:inset 0 0 0 1.5px var(--muted)}
+.diff{font:600 16px var(--font-c);font-variant-numeric:tabular-nums}
+.diff.up{color:var(--good)} .diff.down{color:var(--bad)}
+
+.alert{border-left:5px solid var(--bad);background:var(--surface);border-radius:4px 12px 12px 4px;padding:12px 14px;margin-bottom:12px}
+.alert.warn{border-left-color:var(--warn)}
+.alert.info{border-left-color:var(--ink)}
+.alert b{display:block;margin-bottom:2px}
+
+/* roster strip */
+.roster{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:8px 10px 10px}
+.r-head,.r-row{display:grid;grid-template-columns:44px 1fr;align-items:center}
+.r-ticks{position:relative;height:20px}
+.r-ticks span{position:absolute;top:2px;transform:translateX(-50%);font:500 12px var(--font-c);color:var(--muted);white-space:nowrap}
+.r-ticks span:first-child{transform:none}
+.r-ticks span:last-child{transform:translateX(-100%)}
+.r-row{height:36px;border-top:1px solid var(--line)}
+.r-day{font:600 15px/1 var(--font-c);color:var(--ink-2)}
+.r-day small{display:block;font:500 12px var(--font-c);color:var(--muted)}
+.r-row.is-today .r-day{color:var(--ink)}
+.r-row.is-today{background:linear-gradient(90deg,transparent 44px,color-mix(in srgb,var(--hivis) var(--today-mix,22%),transparent) 44px)}
+.r-track{position:relative;height:100%}
+.r-grid{position:absolute;top:0;bottom:0;width:1px;background:var(--line)}
+.blk{position:absolute;top:6px;bottom:6px;border:0;border-radius:6px;background:var(--c);color:#fff;font:600 13px/24px var(--font-c);padding:0 5px;overflow:hidden;white-space:nowrap;text-overflow:clip;text-align:left;min-width:4px}
+.blk.st-missed{background:repeating-linear-gradient(-45deg,var(--c) 0 4px,transparent 4px 8px);color:var(--ink);opacity:.75}
+.blk.st-planned,.blk.st-unconfirmed{opacity:.88}
+.blk.clash{box-shadow:0 0 0 2.5px var(--bad)}
+.nowline{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--bad);border-radius:1px;pointer-events:none}
+.keyrow{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;font-size:13px;color:var(--ink-2)}
+.keyrow i{display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--c);margin-right:5px;vertical-align:-1px}
+
+/* week nav */
+.wknav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:2px 0 14px}
+.wknav h1{margin:0;text-align:center;flex:1}
+.wknav h1 small{display:block;font:500 15px var(--font);color:var(--ink-2);margin-top:2px}
+.iconbtn{width:46px;height:46px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface);display:grid;place-items:center;padding:0}
+.jobhrs{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.jobhrs span{font-size:14px;padding:4px 10px;border-radius:999px;background:color-mix(in srgb,var(--c) 14%,transparent);color:var(--ink)}
+.jobhrs span::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--c);margin-right:6px;vertical-align:1px}
+
+/* history chart */
+.chart svg{display:block;width:100%;height:auto}
+.chart .lab{font:500 11px var(--font-c);fill:var(--muted)}
+.chart .goal{stroke:var(--ink-2);stroke-dasharray:4 4;stroke-width:1.5}
+.chart .goaltxt{font:600 11px var(--font-c);fill:var(--ink-2)}
+.share{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:baseline;padding:10px 0;border-top:1px solid var(--line)}
+.share:first-child{border-top:0;padding-top:0}
+.share .bar{grid-column:1/-1;margin:4px 0 0}
+.share .bar .e{background:var(--c)}
+
+/* tabs */
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--surface);border-top:1px solid var(--line);padding:4px 6px calc(4px + env(safe-area-inset-bottom))}
+.tabs-in{max-width:560px;margin:0 auto;display:flex;justify-content:space-around;align-items:flex-end}
+.tabs button{background:none;border:0;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;color:var(--muted);padding:6px 6px 4px;min-width:60px}
+.tabs button svg{width:24px;height:24px}
+.tabs button[aria-current=page]{color:var(--ink);font-weight:600}
+.tabs .addtab{width:60px;height:60px;min-width:60px;border-radius:50%;background:var(--hivis);color:var(--navy);margin-top:-26px;justify-content:center;box-shadow:0 0 0 5px var(--paper),0 6px 14px rgba(20,33,61,.25);font-weight:600}
+.tabs .addtab svg{width:28px;height:28px}
+
+/* sheet */
+dialog.sheet{border:0;padding:0;margin:auto auto 0;width:100%;max-width:560px;max-height:92vh;max-height:92dvh;border-radius:22px 22px 0 0;background:var(--paper);color:var(--ink);overflow:auto;overscroll-behavior:contain}
+dialog.sheet::backdrop{background:rgba(8,15,30,.55)}
+dialog.sheet[open]{animation:up .2s ease-out}
+@keyframes up{from{transform:translateY(40px);opacity:.3}}
+@media (prefers-reduced-motion:reduce){dialog.sheet[open]{animation:none}}
+.sheet-in{padding:8px 16px calc(22px + env(safe-area-inset-bottom))}
+.grab{width:42px;height:5px;border-radius:3px;background:var(--line);margin:4px auto 6px}
+.sheet h2{margin:8px 0 14px}
+.fld{margin:0 0 16px}
+.fld>label,.fld>.lab{display:block;font-weight:600;font-size:15px;margin-bottom:7px}
+.fld .lab small{font-weight:400;color:var(--ink-2)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.two label{display:block;font-weight:600;font-size:15px}
+input[type=time],input[type=date],input[type=number],input[type=text],select{display:block;width:100%;margin-top:6px;min-height:48px;padding:10px 12px;border:1.5px solid var(--line);border-radius:12px;background:var(--surface);font-size:17px}
+input[type=color]{width:46px;height:46px;border:1.5px solid var(--line);border-radius:12px;padding:3px;background:var(--surface)}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--surface);border:1.5px solid var(--line);border-radius:14px;padding:4px;margin-bottom:16px}
+.seg button{border:0;background:none;border-radius:10px;min-height:42px;font-weight:600;color:var(--ink-2)}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--paper)}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:1.5px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 14px;min-height:44px;font-weight:600}
+.chip[aria-pressed=true]{background:var(--sel-bg);border-color:var(--sel-bg);color:var(--sel-fg)}
+.chip.job[aria-pressed=true]{--sel-bg:var(--c);--sel-fg:#fff}
+.chip.job::before{content:"";display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--c);margin-right:7px;vertical-align:0}
+.chip.job[aria-pressed=true]::before{background:#fff}
+.chip.tpl{font-weight:500;font-size:15px}
+.dates{display:flex;gap:6px;overflow-x:auto;padding:2px 2px 8px;scrollbar-width:thin}
+.dchip{flex:0 0 auto;width:54px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);padding:5px 0 7px;text-align:center;position:relative}
+.dchip small{display:block;font-size:12px;color:var(--ink-2);line-height:1.2}
+.dchip b{display:block;font:700 22px/1.1 var(--font-c)}
+.dchip em{display:block;font-style:normal;font-size:11px;color:var(--muted);line-height:1}
+.dchip[aria-pressed=true]{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.dchip[aria-pressed=true] small,.dchip[aria-pressed=true] em{color:inherit}
+.dchip.has::after{content:"";position:absolute;top:5px;right:6px;width:6px;height:6px;border-radius:50%;background:var(--warn)}
+details{border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:4px 0;margin:4px 0 16px}
+summary{font-weight:600;padding:10px 0;cursor:pointer}
+.sum{font-size:16px;margin:4px 0 12px}
+.sum b{font:700 24px var(--font-c)}
+.warnbox{background:color-mix(in srgb,var(--bad) 12%,transparent);color:var(--ink);border-radius:12px;padding:10px 12px;margin:0 0 12px;font-size:15px}
+.sheet .stack{display:grid;gap:8px}
+.entry-head{display:flex;gap:12px;align-items:flex-start;margin:6px 0 14px}
+.entry-head i{flex:0 0 auto;width:14px;height:44px;border-radius:4px;background:var(--c);margin-top:4px}
+.entry-head .t{font:700 30px/1.05 var(--font-c)}
+.entry-head .s{color:var(--ink-2)}
+.statusbtns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
+.statusbtns .btn{background:var(--surface);color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line)}
+.statusbtns .btn[aria-pressed=true].w{background:var(--good);color:#fff;box-shadow:none}
+.statusbtns .btn[aria-pressed=true].m{background:var(--bad);color:#fff;box-shadow:none}
+.statusbtns .btn[aria-pressed=true].c{background:var(--muted);color:#fff;box-shadow:none}
+
+/* settings */
+.setrow{display:grid;grid-template-columns:1fr 120px;gap:12px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}
+.setrow:first-child{border-top:0;padding-top:0}
+.setrow input{margin-top:0}
+.setrow .d{font-size:14px;color:var(--ink-2)}
+.jobrow{display:grid;grid-template-columns:46px 1fr 96px 40px;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.jobrow:first-child{border-top:0;padding-top:0}
+.jobrow:first-child+.jobrow{border-top:0}
+.jobrow input{margin-top:0}
+.jobrow.hidden{opacity:.55}
+.toggle{display:flex;justify-content:space-between;align-items:center;gap:16px}
+.switch{position:relative;flex:0 0 auto;width:54px;height:32px;border-radius:16px;border:0;background:var(--line);padding:0}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:left .15s}
+.switch[aria-checked=true]{background:var(--good)}
+.switch[aria-checked=true]::after{left:25px}
+
+.toast{position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:12px;font-weight:600;font-size:15px;z-index:20;opacity:0;pointer-events:none;transition:opacity .2s;max-width:calc(100% - 32px);text-align:center}
+.toast.show{opacity:1}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media (min-width:600px){ .wrap{padding-top:28px} }
+</style>
+</head>
+<body>
+<main class="wrap" id="app" aria-live="polite"></main>
+
+<nav class="tabs" aria-label="Main">
+  <div class="tabs-in">
+    <button data-act="go" data-v="today" aria-current="page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>Today</button>
+    <button data-act="go" data-v="week">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h7M4 12h11M4 18h5M14 6h6M18 12h2M12 18h8"/></svg>Week</button>
+    <button class="addtab" data-act="add" aria-label="Add a shift">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+    <button data-act="go" data-v="history">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 20V12M10 20V6M15 20v-9M20 20V9"/></svg>History</button>
+    <button data-act="go" data-v="settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>Settings</button>
+  </div>
+</nav>
+
+<dialog class="sheet" id="sheet"></dialog>
+<div class="toast" id="toast" role="status"></div>
+<input type="file" id="restoreFile" accept=".json,application/json" class="sr" tabindex="-1" aria-hidden="true">
+
+<script>
+'use strict';
+/* ---------- basics ---------- */
+const $ = (s, r = document) => r.querySelector(s);
+const KEY = 'myshifts.v1';
+const GYM = { id: 'gym', name: 'Gym', color: '#9C36B5' };
+const JOB_COLORS = ['#2F9E44', '#E8590C', '#1C7ED6', '#0C8599', '#C2255C', '#5F3DC4', '#E67700', '#495057'];
+const DOW = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const DOWL = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const MONL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const pad = n => String(n).padStart(2, '0');
+const iso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const parseD = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const addDays = (d, n) => { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() + n); return x; };
+const today = () => { const n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); };
+const weekStartOf = d => addDays(d, -((d.getDay() + 6) % 7));   // Monday
+const mins = t => { const [h, m] = String(t || '0:0').split(':').map(Number); return h * 60 + (m || 0); };
+const hhmm = m => `${pad(Math.floor(m / 60) % 24)}:${pad(m % 60)}`;
+const r2 = n => Math.round(n * 100) / 100;
+
+const DEFAULT = () => ({
+  v: 1,
+  settings: { dailyGoal: 240, weeklyGoal: 1500, gymGoal: 3, autoDone: true, alertMins: 60, welcomed: false, lastBackup: null },
+  jobs: [
+    { id: 'woolies', name: 'Woolies', rate: 24, color: '#2F9E44' },
+    { id: 'iga', name: 'IGA', rate: 20, color: '#E8590C' },
+    { id: 'airport', name: 'Airport', rate: 33, color: '#1C7ED6' }
+  ],
+  entries: []
+});
+function migrate(d) {
+  const base = DEFAULT();
+  return {
+    v: 1,
+    settings: { ...base.settings, ...(d && d.settings) },
+    jobs: Array.isArray(d && d.jobs) ? d.jobs : base.jobs,
+    entries: Array.isArray(d && d.entries) ? d.entries : []
+  };
+}
+function load() {
+  try { const raw = localStorage.getItem(KEY); if (raw) return migrate(JSON.parse(raw)); } catch (e) {}
+  return DEFAULT();
+}
+let S = load();
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(S)); }
+  catch (e) { toast("Couldn't save on this device. Download a backup from Settings."); }
+}
+try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {}
+
+/* ---------- formatting ---------- */
+const money = n => { const neg = n < 0; const v = Math.abs(n); const whole = Math.abs(v - Math.round(v)) < 0.005;
+  return (neg ? '-' : '') + '$' + v.toLocaleString('en-AU', { minimumFractionDigits: whole ? 0 : 2, maximumFractionDigits: whole ? 0 : 2 }); };
+const money0 = n => (n < 0 ? '-' : '') + '$' + Math.round(Math.abs(n)).toLocaleString('en-AU');
+const signed = n => (n >= 0 ? '+' : '-') + '$' + Math.round(Math.abs(n)).toLocaleString('en-AU');
+const fmtH = h => { const v = r2(h); return `${v} ${v === 1 ? 'hr' : 'hrs'}`; };
+const fmtTime = t => { const [h, m] = t.split(':').map(Number); const ap = h < 12 ? 'am' : 'pm'; const hh = h % 12 || 12; return m ? `${hh}:${pad(m)} ${ap}` : `${hh} ${ap}`; };
+const fmtRange = e => `${fmtTime(e.start)} – ${fmtTime(e.end)}`;
+const dShort = d => `${DOW[d.getDay()]} ${d.getDate()} ${MON[d.getMonth()]}`;
+const dLong = d => `${DOWL[d.getDay()]} ${d.getDate()} ${MONL[d.getMonth()]}`;
+function dayLabel(ds) {
+  const t = today();
+  if (ds === iso(t)) return 'Today';
+  if (ds === iso(addDays(t, 1))) return 'Tomorrow';
+  if (ds === iso(addDays(t, -1))) return 'Yesterday';
+  return dShort(parseD(ds));
+}
+function weekLabel(ws) {
+  const we = addDays(ws, 6);
+  return ws.getMonth() === we.getMonth() ? `${ws.getDate()}–${we.getDate()} ${MON[we.getMonth()]}`
+    : `${ws.getDate()} ${MON[ws.getMonth()]} – ${we.getDate()} ${MON[we.getMonth()]}`;
+}
+function fmtDur(ms) {
+  const m = Math.max(1, Math.round(ms / 60000));
+  if (m < 60) return `${m} min`;
+  const h = Math.floor(m / 60), r = m % 60;
+  return r ? `${h} h ${r} min` : `${h} h`;
+}
+
+/* ---------- entry maths ---------- */
+const jobOf = e => e.type === 'gym' ? GYM : (S.jobs.find(j => j.id === e.jobId) || { id: e.jobId, name: 'Old job', color: '#868E96', rate: 0 });
+const startDT = e => { const d = parseD(e.date); d.setMinutes(mins(e.start)); return d; };
+const endDT = e => { const d = parseD(e.date); let em = mins(e.end); if (em <= mins(e.start)) em += 1440; d.setMinutes(em); return d; };
+const hoursOf = e => { let span = mins(e.end) - mins(e.start); if (span <= 0) span += 1440; return Math.max(0, (span - (+e.brk || 0)) / 60); };
+const payOf = e => e.type === 'gym' ? 0 : r2(hoursOf(e) * (+e.rate || 0));
+function statusOf(e, now = new Date()) {
+  if (e.status) return e.status;
+  if (now >= endDT(e)) return S.settings.autoDone ? 'done' : 'unconfirmed';
+  if (now >= startDT(e)) return 'now';
+  return 'planned';
+}
+const byStart = (a, b) => startDT(a) - startDT(b);
+const visibleJobs = () => S.jobs.filter(j => !j.hidden);
+const inRange = (a, b) => S.entries.filter(e => e.date >= a && e.date <= b);
+
+function stats(list, now = new Date()) {
+  const r = { earned: 0, booked: 0, lost: 0, hours: 0, gymDone: 0, gymPlanned: 0, missed: 0, shifts: 0, byJob: {} };
+  for (const e of list) {
+    const st = statusOf(e, now);
+    if (st === 'cancelled') continue;
+    if (e.type === 'gym') { if (st === 'done') r.gymDone++; else if (st !== 'missed') r.gymPlanned++; continue; }
+    const p = payOf(e), h = hoursOf(e);
+    if (st === 'missed') { r.lost += p; r.missed++; continue; }
+    if (st === 'done') r.earned += p; else r.booked += p;
+    r.hours += h; r.shifts++;
+    const b = r.byJob[e.jobId] || (r.byJob[e.jobId] = { hours: 0, pay: 0 });
+    b.hours += h; b.pay += p;
+  }
+  r.total = r.earned + r.booked;
+  return r;
+}
+function findClashes(list = S.entries) {
+  const act = list.filter(e => { const s = statusOf(e); return s !== 'cancelled' && s !== 'missed'; })
+    .map(e => ({ e, s: +startDT(e), en: +endDT(e) })).sort((a, b) => a.s - b.s);
+  const set = new Set();
+  for (let i = 0; i < act.length; i++)
+    for (let j = i + 1; j < act.length && act[j].s < act[i].en; j++) { set.add(act[i].e.id); set.add(act[j].e.id); }
+  return set;
+}
+function bestJob() { return visibleJobs().reduce((b, j) => (+j.rate > (b ? +b.rate : 0) ? j : b), null); }
+
+/* ---------- small UI pieces ---------- */
+function progress(earned, booked, goal, cls = '') {
+  const max = Math.max(goal, earned + booked) || 1;
+  const hit = earned >= goal && goal > 0;
+  return `<div class="bar ${cls} ${hit ? 'hit' : ''}" role="img" aria-label="${money0(earned)} earned and ${money0(booked)} booked of ${money0(goal)}">
+    <span class="e" style="width:${earned / max * 100}%"></span><span class="b" style="width:${booked / max * 100}%"></span></div>`;
+}
+function tagFor(e, clashes) {
+  const st = statusOf(e);
+  let t = '';
+  if (st === 'now') t += '<span class="tag now">On now</span>';
+  if (st === 'missed') t += '<span class="tag missed">Missed</span>';
+  if (st === 'cancelled') t += '<span class="tag cancelled">Cancelled</span>';
+  if (st === 'unconfirmed') t += '<span class="tag unconfirmed">Did you work it?</span>';
+  if (e.status === 'done') t += '<span class="tag done">Worked</span>';
+  if (clashes && clashes.has(e.id)) t += '<span class="tag clash">Clash</span>';
+  return t;
+}
+function rowHTML(e, clashes, opts = {}) {
+  const j = jobOf(e), st = statusOf(e);
+  const sub = `${opts.showDay ? dayLabel(e.date) + ', ' : ''}${fmtRange(e)}${e.type === 'gym' ? '' : ', ' + fmtH(hoursOf(e))}`;
+  return `<button class="row is-${st}" data-act="entry" data-id="${e.id}" style="--c:${esc(j.color)}">
+    <span class="cb"></span>
+    <span><span class="t">${esc(j.name)}</span>${tagFor(e, clashes)}<span class="s" style="display:block">${esc(sub)}</span>${e.note ? `<span class="s" style="display:block;font-style:italic">${esc(e.note)}</span>` : ''}</span>
+    <span class="p">${e.type === 'gym' ? '' : money(payOf(e))}</span></button>`;
+}
+function groupedList(list, clashes, emptyMsg) {
+  if (!list.length) return `<div class="list"><div class="empty-row">${emptyMsg}</div></div>`;
+  let html = '<div class="list">', cur = null;
+  for (const e of list) {
+    if (e.date !== cur) { cur = e.date; html += `<div class="dayhead"><span>${dayLabel(cur)}</span></div>`; }
+    html += rowHTML(e, clashes);
+  }
+  return html + '</div>';
+}
+
+/* roster strip: each day is a row, shifts drawn at their real times */
+function roster(days, clashes) {
+  const keys = days.map(iso), segs = [];
+  for (const e of S.entries) {
+    const st = statusOf(e);
+    if (st === 'cancelled') continue;
+    const s = mins(e.start); let en = mins(e.end); if (en <= s) en += 1440;
+    const di = keys.indexOf(e.date);
+    if (di >= 0) segs.push({ di, s, en: Math.min(en, 1440), e, st });
+    if (en > 1440) { const dj = keys.indexOf(iso(addDays(parseD(e.date), 1))); if (dj >= 0) segs.push({ di: dj, s: 0, en: en - 1440, e, st }); }
+  }
+  let lo = 6 * 60, hi = 22 * 60;
+  for (const g of segs) { lo = Math.min(lo, g.s); hi = Math.max(hi, g.en); }
+  lo = Math.floor(lo / 60) * 60; hi = Math.ceil(hi / 60) * 60;
+  const span = hi - lo, step = span > 14 * 60 ? 180 : 120;
+  const pct = m => ((m - lo) / span * 100).toFixed(2);
+  const tickLab = m => { const h = (m / 60) % 24; return h === 0 ? '12am' : h === 12 ? '12pm' : h < 12 ? `${h}am` : `${h - 12}pm`; };
+  let ticks = '', grid = '';
+  for (let m = lo; m <= hi; m += step) { ticks += `<span style="left:${pct(m)}%">${tickLab(m)}</span>`; if (m > lo && m < hi) grid += `<i class="r-grid" style="left:${pct(m)}%"></i>`; }
+  const now = new Date(), nowKey = iso(today()), nowM = now.getHours() * 60 + now.getMinutes();
+  let rows = '';
+  days.forEach((d, i) => {
+    const k = keys[i], isToday = k === nowKey;
+    let blocks = '';
+    for (const g of segs.filter(x => x.di === i)) {
+      const j = jobOf(g.e);
+      blocks += `<button class="blk st-${g.st} ${clashes.has(g.e.id) ? 'clash' : ''}" style="left:${pct(g.s)}%;width:${((g.en - g.s) / span * 100).toFixed(2)}%;--c:${esc(j.color)}" data-act="entry" data-id="${g.e.id}" aria-label="${esc(j.name)} ${dShort(d)} ${esc(fmtRange(g.e))}">${esc(j.name)}</button>`;
+    }
+    const nowline = isToday && nowM >= lo && nowM <= hi ? `<i class="nowline" style="left:${pct(nowM)}%"></i>` : '';
+    rows += `<div class="r-row ${isToday ? 'is-today' : ''}"><span class="r-day">${DOW[d.getDay()]}<small>${d.getDate()} ${MON[d.getMonth()]}</small></span><div class="r-track">${grid}${blocks}${nowline}</div></div>`;
+  });
+  return `<div class="roster"><div class="r-head"><span></span><div class="r-ticks">${ticks}</div></div>${rows}</div>`;
+}
+
+/* ---------- views ---------- */
+let view = 'today', weekOffset = 0, deferredInstall = null;
+const VIEWS = { today: viewToday, week: viewWeek, history: viewHistory, settings: viewSettings };
+
+function viewToday() {
+  const now = new Date(), t = today(), tk = iso(t);
+  const clashes = findClashes();
+  let h = `<h1>${dLong(t)}</h1>`;
+
+  if (!S.settings.welcomed) {
+    h += `<div class="alert info"><b>Set up once, then just add shifts</b>
+      <p class="small">Check your jobs and pay rates in Settings. After that, add each shift when you get your roster. Your daily and weekly totals, goals and history fill in by themselves.</p>
+      <div class="btns"><button class="btn sm" data-act="add">Add my first shift</button><button class="btn sm ghost" data-act="go" data-v="settings">Check jobs and rates</button><button class="btn sm ghost" data-act="welcomed">Got it</button></div></div>`;
+  }
+  const clashList = S.entries.filter(e => clashes.has(e.id) && endDT(e) >= now).sort(byStart);
+  if (clashList.length) {
+    const days = [...new Set(clashList.map(e => { const l = dayLabel(e.date); return l === 'Today' || l === 'Tomorrow' ? l.toLowerCase() : 'on ' + l; }))];
+    h += `<div class="alert"><b>Shifts overlap ${days.join(' and ')}</b><span class="small">You can't be in two places at once. Tap one below to change or cancel it.</span></div>`;
+  }
+  const unconf = S.entries.filter(e => statusOf(e, now) === 'unconfirmed').sort(byStart);
+  if (unconf.length) {
+    h += `<div class="alert warn"><b>Did you work ${unconf.length === 1 ? 'this shift' : 'these shifts'}?</b><span class="small">Tap each one and mark it worked or missed.</span></div>`;
+    h += groupedList(unconf, clashes, '');
+  }
+
+  // next up
+  const live = S.entries.filter(e => { const s = statusOf(e, now); return s === 'now'; }).sort(byStart);
+  const upcoming = S.entries.filter(e => { const s = statusOf(e, now); return s === 'planned'; }).sort(byStart);
+  const nx = live[0] || upcoming[0];
+  if (nx) {
+    const j = jobOf(nx), isNow = statusOf(nx, now) === 'now';
+    const delta = isNow ? `ends in ${fmtDur(endDT(nx) - now)}` : (startDT(nx) - now < 86400000 ? `starts in ${fmtDur(startDT(nx) - now)}` : '');
+    h += `<section class="next" style="--c:${esc(j.color)}" aria-label="${isNow ? 'On now' : 'Next up'}">
+      <div class="lbl"><span>${isNow ? 'On now' : 'Next up'}</span><span>${esc(delta)}</span></div>
+      <div class="job"><i></i>${esc(j.name)}</div>
+      <div class="when">${dayLabel(nx.date)}, ${fmtRange(nx)}</div>
+      <div class="meta">${nx.type === 'gym' ? 'Gym session' : `${fmtH(hoursOf(nx))}, ${money(payOf(nx))}`}${clashes.has(nx.id) ? '. Overlaps another shift' : ''}</div>
+      ${nx.note ? `<div class="note">${esc(nx.note)}</div>` : ''}
+      <div class="btns"><button class="btn sm" data-act="cal1" data-id="${nx.id}">Add to my calendar</button><button class="btn sm ghost" data-act="entry" data-id="${nx.id}">Details</button></div>
+    </section>`;
+  } else {
+    h += `<section class="next empty"><div class="lbl"><span>Next up</span></div>
+      <div class="job">Nothing booked</div><div class="meta">Add your next shift and it shows up here, with a countdown.</div>
+      <div class="btns"><button class="btn sm" data-act="add">Add a shift</button></div></section>`;
+  }
+
+  // today money
+  const todays = S.entries.filter(e => e.date === tk);
+  const ts = stats(todays, now), dg = +S.settings.dailyGoal || 0;
+  h += `<h2>Today <span class="side">goal ${money0(dg)}</span></h2>
+    <div class="money"><span class="big">${money0(ts.total)}</span><span class="of">${ts.total >= dg ? `goal reached${ts.total > dg ? ', ' + signed(ts.total - dg) + ' over' : ''}` : `${money0(dg - ts.total)} short of ${money0(dg)}`}</span></div>
+    ${progress(ts.earned, ts.booked, dg)}
+    <div class="legend"><span><i></i>Worked ${money0(ts.earned)}</span><span><i class="b"></i>Still to work ${money0(ts.booked)}</span><span>${fmtH(ts.hours)}</span></div>`;
+  if (todays.length) h += `<div style="margin-top:12px">${roster([t], clashes)}</div>`;
+
+  // week money
+  const ws = weekStartOf(t), we = addDays(ws, 6);
+  const wsStats = stats(inRange(iso(ws), iso(we)), now), wg = +S.settings.weeklyGoal || 0;
+  const need = Math.max(0, wg - wsStats.total), bj = bestJob();
+  h += `<h2>This week <span class="side">${weekLabel(ws)}</span></h2>
+    <div class="money"><span class="big">${money0(wsStats.total)}</span><span class="of">of ${money0(wg)}</span></div>
+    ${progress(wsStats.earned, wsStats.booked, wg)}
+    <div class="legend"><span><i></i>Worked ${money0(wsStats.earned)}</span><span><i class="b"></i>Booked ${money0(wsStats.booked)}</span><span>${fmtH(wsStats.hours)}</span></div>
+    <p class="callout">${need > 0
+      ? `Still need <b>${money0(need)}</b>${bj && +bj.rate > 0 ? `, about ${fmtH(Math.ceil(need / bj.rate * 2) / 2)} at ${esc(bj.name)}` : ''}.`
+      : `Weekly goal covered with <b>${signed(wsStats.total - wg)}</b> to spare.`}
+      ${wsStats.missed ? `<br><span style="color:var(--bad)">${wsStats.missed} missed ${wsStats.missed === 1 ? 'shift' : 'shifts'} this week cost ${money0(wsStats.lost)}.</span>` : ''}</p>`;
+
+  // gym
+  const gg = +S.settings.gymGoal || 0, gymToday = todays.find(e => e.type === 'gym' && statusOf(e, now) === 'done');
+  let dots = '';
+  const totalDots = Math.max(gg, wsStats.gymDone + wsStats.gymPlanned);
+  for (let i = 0; i < totalDots; i++) dots += `<span class="${i < wsStats.gymDone ? 'on' : i < wsStats.gymDone + wsStats.gymPlanned ? 'pl' : ''}"></span>`;
+  h += `<h2>Gym this week <span class="side">${wsStats.gymDone} of ${gg} done</span></h2>
+    <div class="gym"><div class="dots" role="img" aria-label="${wsStats.gymDone} gym sessions done, ${wsStats.gymPlanned} planned">${dots}</div>
+    ${gymToday ? `<button class="btn sm ghost" data-act="entry" data-id="${gymToday.id}">Went today ✓</button>` : `<button class="btn sm" data-act="gymToday">I went to the gym today</button>`}</div>`;
+  if (wsStats.gymDone + wsStats.gymPlanned < gg) {
+    h += `<p class="hint">Plan a session in a gap between shifts: tap + and choose Gym.</p>`;
+  }
+
+  // coming up
+  const horizon = iso(addDays(t, 6));
+  const coming = S.entries.filter(e => { const s = statusOf(e, now); return (s === 'planned' || s === 'now') && e.date <= horizon; }).sort(byStart);
+  h += `<h2>Coming up <span class="side">next 7 days</span></h2>` + groupedList(coming, clashes, 'Nothing booked for the next 7 days. Tap + to add your roster.');
+
+  // just finished (auto-counted)
+  if (S.settings.autoDone) {
+    const recent = S.entries.filter(e => !e.status && endDT(e) <= now && now - endDT(e) < 24 * 3600000 && e.type !== 'gym').sort(byStart);
+    if (recent.length) {
+      h += `<h2>Just finished</h2><p class="hint" style="margin:-4px 0 8px">Counted as worked. If you missed one, tap it and mark it missed.</p>` + groupedList(recent, clashes, '');
+    }
+  }
+
+  // backup nudge
+  const lb = S.settings.lastBackup ? new Date(S.settings.lastBackup) : null;
+  if (S.entries.length >= 5 && (!lb || now - lb > 14 * 86400000)) {
+    h += `<div class="alert info" style="margin-top:24px"><b>Your shifts live only on this phone</b><span class="small">Download a backup now and then, so a cleared browser or new phone doesn't wipe them.</span>
+      <div class="btns" style="margin-top:8px"><button class="btn sm" data-act="backup">Download backup</button></div></div>`;
+  }
+  return h;
+}
+
+function viewWeek() {
+  const now = new Date(), t = today();
+  const ws = addDays(weekStartOf(t), 7 * weekOffset), we = addDays(ws, 6);
+  const days = Array.from({ length: 7 }, (_, i) => addDays(ws, i));
+  const list = inRange(iso(ws), iso(we)), st = stats(list, now), clashes = findClashes();
+  const wg = +S.settings.weeklyGoal || 0, dg = +S.settings.dailyGoal || 0, gg = +S.settings.gymGoal || 0;
+  const name = weekOffset === 0 ? 'This week' : weekOffset === 1 ? 'Next week' : weekOffset === -1 ? 'Last week' : weekLabel(ws);
+  let h = `<div class="wknav"><button class="iconbtn" data-act="wk" data-v="-1" aria-label="Previous week"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <h1>${name}<small>${weekLabel(ws)} ${we.getFullYear()}</small>${weekOffset ? `<small><button class="linkbtn" data-act="wk" data-v="0">Back to this week</button></small>` : ''}</h1>
+    <button class="iconbtn" data-act="wk" data-v="1" aria-label="Next week"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M9 5l7 7-7 7"/></svg></button></div>`;
+  h += `<div class="money"><span class="big">${money0(st.total)}</span><span class="of">of ${money0(wg)}${st.total >= wg ? `, goal covered` : `, ${money0(wg - st.total)} to go`}</span></div>
+    ${progress(st.earned, st.booked, wg)}
+    <div class="legend"><span><i></i>Worked ${money0(st.earned)}</span><span><i class="b"></i>Booked ${money0(st.booked)}</span><span>${fmtH(st.hours)}</span><span>Gym ${st.gymDone}/${gg}</span>${st.missed ? `<span style="color:var(--bad)">Missed ${money0(st.lost)}</span>` : ''}</div>`;
+  const jh = visibleJobs().concat(S.jobs.filter(j => j.hidden && st.byJob[j.id])).filter(j => st.byJob[j.id])
+    .map(j => `<span style="--c:${esc(j.color)}">${esc(j.name)} ${fmtH(st.byJob[j.id].hours)}</span>`).join('');
+  if (jh) h += `<div class="jobhrs">${jh}</div>`;
+
+  h += `<h2>Roster</h2>${roster(days, clashes)}
+    <div class="keyrow">${visibleJobs().map(j => `<span style="--c:${esc(j.color)}"><i></i>${esc(j.name)}</span>`).join('')}<span style="--c:${GYM.color}"><i></i>Gym</span></div>`;
+
+  h += `<h2>Day by day</h2><div class="list">`;
+  for (const d of days) {
+    const k = iso(d), de = list.filter(e => e.date === k).sort(byStart), ds = stats(de, now);
+    const diff = ds.total - dg, work = de.some(e => e.type !== 'gym' && statusOf(e, now) !== 'cancelled');
+    h += `<div class="dayhead"><span>${dayLabel(k) === dShort(d) ? dShort(d) : `${dayLabel(k)}, ${d.getDate()} ${MON[d.getMonth()]}`}</span>
+      <span>${work ? `<span class="num" style="font-size:18px">${money0(ds.total)}</span> <span class="diff ${diff >= 0 ? 'up' : 'down'}">${signed(diff)}</span>` : ''}</span></div>`;
+    h += de.map(e => rowHTML(e, clashes)).join('');
+    h += `<div class="empty-row"><span>${de.length ? '' : 'Day off'}</span><button class="linkbtn" data-act="add" data-d="${k}">Add to ${DOW[d.getDay()]}</button></div>`;
+  }
+  h += `</div><p class="hint">Green and red amounts compare each day with your ${money0(dg)} daily goal.</p>`;
+  return h;
+}
+
+function weekRows() {
+  const t = today(), cur = weekStartOf(t);
+  if (!S.entries.length) return [];
+  const first = weekStartOf(parseD(S.entries.reduce((m, e) => e.date < m ? e.date : m, S.entries[0].date)));
+  const lastE = weekStartOf(parseD(S.entries.reduce((m, e) => e.date > m ? e.date : m, S.entries[0].date)));
+  const last = lastE > cur ? lastE : cur;
+  const rows = [];
+  for (let ws = first; ws <= last; ws = addDays(ws, 7)) {
+    const we = addDays(ws, 6);
+    rows.push({ ws, we, st: stats(inRange(iso(ws), iso(we))), done: we < t, current: +ws === +cur, off: Math.round((ws - cur) / (7 * 86400000)) });
+  }
+  return rows;
+}
+
+function viewHistory() {
+  const rows = weekRows(), wg = +S.settings.weeklyGoal || 0;
+  let h = `<h1>History</h1>`;
+  if (!rows.length) return h + `<div class="panel"><p>Your weekly results show up here once you've added some shifts.</p><button class="btn" data-act="add">Add a shift</button></div>`;
+  const done = rows.filter(r => r.done);
+  const all = stats(S.entries);
+  const hit = done.filter(r => r.st.earned >= wg).length;
+  const avg = done.length ? done.reduce((s, r) => s + r.st.earned, 0) / done.length : 0;
+  const best = rows.reduce((b, r) => r.st.earned > b ? r.st.earned : b, 0);
+  h += `<div class="split">
+    <div class="kv"><div class="k">Earned so far</div><div class="v">${money0(all.earned)}</div></div>
+    <div class="kv"><div class="k">Weeks at ${money0(wg)}+</div><div class="v">${hit} of ${done.length}</div></div>
+    <div class="kv"><div class="k">Average finished week</div><div class="v">${done.length ? money0(avg) : '–'}</div></div>
+    <div class="kv"><div class="k">Best week</div><div class="v">${money0(best)}</div></div>
+    <div class="kv"><div class="k">Gym sessions</div><div class="v">${all.gymDone}</div></div>
+    <div class="kv"><div class="k">Missed shifts</div><div class="v" style="${all.missed ? 'color:var(--bad)' : ''}">${all.missed}${all.missed ? ` <span style="font-size:16px">(${money0(all.lost)})</span>` : ''}</div></div></div>`;
+
+  // chart, last 12 weeks
+  const show = rows.slice(-12), W = 340, H = 170, pl = 6, pr = 6, pt = 18, pb = 22;
+  const maxV = Math.max(wg, ...show.map(r => r.st.total)) * 1.08 || 1;
+  const bw = (W - pl - pr) / show.length, y = v => pt + (H - pt - pb) * (1 - v / maxV);
+  let bars = '';
+  show.forEach((r, i) => {
+    const x = pl + i * bw + bw * 0.18, w = bw * 0.64;
+    const ce = r.done && r.st.earned >= wg ? 'var(--good)' : 'var(--ink)';
+    bars += `<g data-act="gotoWeek" data-off="${r.off}" style="cursor:pointer"><title>${weekLabel(r.ws)}: ${money0(r.st.total)}</title>
+      <rect x="${x}" y="${y(r.st.earned)}" width="${w}" height="${Math.max(0, H - pb - y(r.st.earned))}" rx="3" fill="${ce}"/>
+      <rect x="${x}" y="${y(r.st.total)}" width="${w}" height="${Math.max(0, y(r.st.earned) - y(r.st.total))}" rx="3" fill="var(--ink)" opacity=".3"/>
+      <rect x="${pl + i * bw}" y="${pt}" width="${bw}" height="${H - pt}" fill="transparent"/>
+      <text class="lab" x="${x + w / 2}" y="${H - 6}" text-anchor="middle">${r.ws.getDate()} ${MON[r.ws.getMonth()]}</text></g>`;
+  });
+  h += `<h2>Weekly pay <span class="side">tap a bar to open that week</span></h2>
+    <div class="panel chart"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Weekly pay for the last ${show.length} weeks">
+      ${bars}<line class="goal" x1="${pl}" x2="${W - pr}" y1="${y(wg)}" y2="${y(wg)}"/><text class="goaltxt" x="${W - pr}" y="${y(wg) - 5}" text-anchor="end">Goal ${money0(wg)}</text></svg>
+      <div class="legend" style="margin-top:6px"><span><i style="background:var(--good)"></i>Goal hit</span><span><i></i>Worked</span><span><i style="opacity:.3"></i>Booked</span></div></div>`;
+
+  // by job, last 4 weeks
+  const t = today(), from = addDays(weekStartOf(t), -21);
+  const recent = stats(inRange(iso(from), iso(t)));
+  const jobs = S.jobs.filter(j => recent.byJob[j.id]);
+  if (jobs.length) {
+    const totalPay = jobs.reduce((s, j) => s + recent.byJob[j.id].pay, 0) || 1;
+    h += `<h2>Pay by job <span class="side">last 4 weeks</span></h2><div class="panel">` +
+      jobs.sort((a, b) => recent.byJob[b.id].pay - recent.byJob[a.id].pay).map(j => {
+        const b = recent.byJob[j.id];
+        return `<div class="share" style="--c:${esc(j.color)}"><span><b>${esc(j.name)}</b> <span class="muted small">${fmtH(b.hours)}</span></span><span class="num" style="font-size:20px;font-weight:600">${money0(b.pay)}</span>
+          <div class="bar thin"><span class="e" style="width:${b.pay / totalPay * 100}%"></span></div></div>`;
+      }).join('') + `</div>`;
+  }
+
+  // week list
+  h += `<h2>Every week</h2><div class="list">` + rows.slice().reverse().map(r => {
+    const diff = r.st.earned - wg;
+    const res = r.done ? (diff >= 0 ? `<span class="tag done">Goal hit</span>` : `<span class="tag missed">Short ${money0(-diff)}</span>`) : r.current ? `<span class="tag now">This week</span>` : `<span class="tag cancelled">Upcoming</span>`;
+    return `<button class="row" data-act="gotoWeek" data-off="${r.off}" style="--c:${r.done && diff >= 0 ? 'var(--good)' : 'var(--line)'}"><span class="cb"></span>
+      <span><span class="t">${weekLabel(r.ws)}</span>${res}<span class="s" style="display:block">${fmtH(r.st.hours)}, gym ${r.st.gymDone}${r.st.missed ? `, ${r.st.missed} missed` : ''}</span></span>
+      <span class="p">${money0(r.done ? r.st.earned : r.st.total)}</span></button>`;
+  }).join('') + `</div>`;
+  return h;
+}
+
+function viewSettings() {
+  const s = S.settings, standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  const dg = +s.dailyGoal || 0, wg = +s.weeklyGoal || 0;
+  let h = `<h1>Settings</h1>`;
+  h += `<h2>Goals</h2><div class="panel">
+    <div class="setrow"><label for="s-daily">Daily pay goal<div class="d">How much you want to earn each day</div></label><input id="s-daily" type="number" inputmode="decimal" min="0" step="10" value="${esc(s.dailyGoal)}" data-s="dailyGoal"></div>
+    <div class="setrow"><label for="s-weekly">Weekly pay goal<div class="d">Monday to Sunday</div></label><input id="s-weekly" type="number" inputmode="decimal" min="0" step="50" value="${esc(s.weeklyGoal)}" data-s="weeklyGoal"></div>
+    <div class="setrow"><label for="s-gym">Gym sessions a week</label><input id="s-gym" type="number" inputmode="numeric" min="0" max="14" step="1" value="${esc(s.gymGoal)}" data-s="gymGoal"></div>
+    ${dg * 6 < wg && dg > 0 ? `<p class="hint">${money0(dg)} a day for 6 days is ${money0(dg * 6)}, so to reach ${money0(wg)} you need about ${money0(Math.ceil(wg / 6))} a day over 6 days, or ${money0(dg)} every day for 7.</p>` : ''}
+  </div>`;
+
+  h += `<h2>Jobs and pay rates</h2><div class="panel"><div class="jobrow" style="padding-top:0;font-size:13px;color:var(--ink-2)"><span>Colour</span><span>Job</span><span>$ per hour</span><span></span></div>` + S.jobs.map(j => `
+    <div class="jobrow ${j.hidden ? 'hidden' : ''}">
+      <input type="color" value="${esc(j.color)}" data-job="color" data-id="${j.id}" aria-label="Colour for ${esc(j.name)}">
+      <input type="text" value="${esc(j.name)}" data-job="name" data-id="${j.id}" aria-label="Job name" maxlength="24">
+      <input type="number" inputmode="decimal" min="0" step="0.01" value="${esc(j.rate)}" data-job="rate" data-id="${j.id}" aria-label="Pay per hour for ${esc(j.name)}">
+      ${j.hidden ? `<button class="iconbtn" style="width:40px;height:40px" data-act="showJob" data-id="${j.id}" aria-label="Bring back ${esc(j.name)}" title="Bring back">↺</button>`
+        : `<button class="iconbtn" style="width:40px;height:40px" data-act="removeJob" data-id="${j.id}" aria-label="Remove ${esc(j.name)}" title="Remove">✕</button>`}
+    </div>`).join('') + `
+    <div class="btns" style="margin-top:12px"><button class="btn sm ghost" data-act="addJob">Add a job</button></div>
+    <p class="hint">Pay per hour, before tax. A new rate applies to new shifts and to upcoming shifts that used the old rate. Weekend or public holiday rate? Change it on that shift under "Pay rate and notes".</p></div>`;
+
+  h += `<h2>Finished shifts</h2><div class="panel"><div class="toggle"><div><b>Count them as worked automatically</b><div class="hint" style="margin-top:2px">When a shift's finish time passes it's counted as worked. You only need to act if you missed one.</div></div>
+    <button class="switch" role="switch" aria-checked="${s.autoDone}" aria-label="Count finished shifts as worked automatically" data-act="toggleAuto"></button></div></div>`;
+
+  h += `<h2>Reminders</h2><div class="panel">
+    <p>Put your upcoming shifts in your phone's calendar so it reminds you before each one.</p>
+    <label class="fld" style="display:block">Remind me<select data-s="alertMins">
+      ${[[0, 'No reminder'], [30, '30 minutes before'], [60, '1 hour before'], [90, '90 minutes before'], [120, '2 hours before']].map(([v, l]) => `<option value="${v}" ${+s.alertMins === v ? 'selected' : ''}>${l}</option>`).join('')}
+    </select></label>
+    <button class="btn block" data-act="calAll">Add upcoming shifts to my calendar</button>
+    <p class="hint">Opens a calendar file. On iPhone tap Add All; on Android open it with Google Calendar. Do it again after your roster changes.</p></div>`;
+
+  h += `<h2>Backup</h2><div class="panel">
+    <p>Your shifts are saved in this browser on this phone only. Nothing is uploaded anywhere.</p>
+    <div class="stack" style="display:grid;gap:8px">
+      <button class="btn" data-act="backup">Download backup</button>
+      <button class="btn ghost" data-act="restore">Restore from a backup</button>
+      <button class="btn ghost" data-act="csv">Export for Excel or Google Sheets</button>
+    </div>
+    <p class="hint">${s.lastBackup ? `Last backup: ${dShort(new Date(s.lastBackup))}.` : 'No backup yet.'} To move to a new phone, download a backup here and restore it there.</p></div>`;
+
+  if (!standalone) {
+    h += `<h2>Use it like an app</h2><div class="panel">
+      ${deferredInstall ? `<button class="btn block hv" data-act="install">Install on this phone</button>` : ''}
+      <p class="${deferredInstall ? 'hint' : ''}" style="margin:0">iPhone: open this page in Safari, tap Share, then Add to Home Screen. Android: tap the ⋮ menu in Chrome, then Install app or Add to home screen.</p></div>`;
+  }
+  h += `<h2>Start again</h2><div class="panel"><p class="small">Deletes every shift and setting on this phone. Download a backup first if you might want them.</p><button class="btn danger" data-act="erase">Erase everything</button></div>`;
+  return h;
+}
+
+/* ---------- render ---------- */
+function render() {
+  $('#app').innerHTML = VIEWS[view]();
+  document.querySelectorAll('.tabs [data-v]').forEach(b => b.setAttribute('aria-current', b.dataset.v === view ? 'page' : 'false'));
+  document.title = { today: 'My Shifts', week: 'Week — My Shifts', history: 'History — My Shifts', settings: 'Settings — My Shifts' }[view];
+}
+function go(v) {
+  if (!VIEWS[v]) v = 'today';
+  if (v === 'week' && view !== 'week') weekOffset = 0;
+  view = v;
+  if (location.hash !== '#' + v) history.replaceState(null, '', '#' + v);
+  render(); window.scrollTo(0, 0);
+}
+
+/* ---------- toast + files ---------- */
+let toastT;
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2600); }
+function download(name, text, type) {
+  const blob = new Blob([text], { type }), url = URL.createObjectURL(blob), a = document.createElement('a');
+  a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+const icsEsc = s => String(s).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
+const icsDT = d => `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
+function ics(list) {
+  const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');
+  const L = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//My Shifts//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH'];
+  for (const e of list) {
+    const j = jobOf(e), title = e.type === 'gym' ? 'Gym' : `${j.name} shift`;
+    const desc = e.type === 'gym' ? (e.note || 'Gym session') : `${fmtH(hoursOf(e))}, ${money(payOf(e))}${e.note ? '. ' + e.note : ''}`;
+    L.push('BEGIN:VEVENT', `UID:${e.id}@my-shifts`, `SEQUENCE:${e.rev || 0}`, `DTSTAMP:${stamp}`, `DTSTART:${icsDT(startDT(e))}`, `DTEND:${icsDT(endDT(e))}`,
+      `SUMMARY:${icsEsc(title)}`, `DESCRIPTION:${icsEsc(desc)}`);
+    if (+S.settings.alertMins > 0) L.push('BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${icsEsc(title)}`, `TRIGGER:-PT${+S.settings.alertMins}M`, 'END:VALARM');
+    L.push('END:VEVENT');
+  }
+  L.push('END:VCALENDAR');
+  return L.join('\r\n');
+}
+function csv() {
+  const q = v => { const s = String(v ?? ''); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+  const head = ['Date', 'Day', 'Type', 'Job', 'Start', 'Finish', 'Break (mins)', 'Hours', 'Rate', 'Pay', 'Status', 'Note'];
+  const rows = S.entries.slice().sort(byStart).map(e => [e.date, DOW[parseD(e.date).getDay()], e.type === 'gym' ? 'Gym' : 'Shift', jobOf(e).name,
+    e.start, e.end, e.brk || 0, r2(hoursOf(e)), e.type === 'gym' ? 0 : e.rate, payOf(e), { done: 'Worked', missed: 'Missed', cancelled: 'Cancelled', now: 'On now', planned: 'Planned', unconfirmed: 'Not confirmed' }[statusOf(e)], e.note || '']);
+  return [head, ...rows].map(r => r.map(q).join(',')).join('\r\n');
+}
+
+/* ---------- add / edit sheet ---------- */
+const sheet = $('#sheet');
+let F = null;
+function closeSheet() { if (sheet.open) sheet.close(); F = null; }
+sheet.addEventListener('click', e => { if (e.target === sheet) closeSheet(); });
+sheet.addEventListener('close', () => { F = null; });
+
+function lastFor(type, jobId) {
+  for (let i = S.entries.length - 1; i >= 0; i--) { const e = S.entries[i]; if (e.type === type && (type === 'gym' || e.jobId === jobId)) return e; }
+  return null;
+}
+function templates(type) {
+  const map = new Map();
+  S.entries.forEach((e, i) => {
+    if (e.type !== type) return;
+    if (type === 'shift' && !visibleJobs().some(j => j.id === e.jobId)) return;
+    const k = [e.jobId, e.start, e.end, +e.brk || 0].join('|');
+    const m = map.get(k) || { n: 0, last: 0, e };
+    m.n++; m.last = i; m.e = e; map.set(k, m);
+  });
+  return [...map.values()].sort((a, b) => b.n - a.n || b.last - a.last).slice(0, 6).map(m => m.e);
+}
+
+function openAdd(opt = {}) {
+  const src = opt.editId ? S.entries.find(e => e.id === opt.editId) : opt.copyId ? S.entries.find(e => e.id === opt.copyId) : null;
+  const type = src ? src.type : 'shift';
+  const job = src && src.type === 'shift' ? S.jobs.find(j => j.id === src.jobId) : (() => { const l = lastFor('shift'); return (l && visibleJobs().find(j => j.id === l.jobId)) || visibleJobs()[0]; })();
+  const tmpl = src || (job ? lastFor('shift', job.id) : null);
+  F = {
+    editId: opt.editId || null, type,
+    jobId: job ? job.id : null,
+    dates: new Set(opt.editId ? [src.date] : opt.date ? [opt.date] : opt.copyId ? [] : [iso(today())]),
+    start: tmpl ? tmpl.start : '09:00', end: tmpl ? tmpl.end : '17:00',
+    brk: tmpl ? (+tmpl.brk || 0) : 30,
+    rate: src && src.type === 'shift' ? src.rate : (job ? job.rate : 0),
+    note: src && opt.editId ? (src.note || '') : '',
+    stripFrom: null
+  };
+  if (type === 'gym' && !src) { F.start = '17:00'; F.end = '18:00'; F.brk = 0; }
+  const anchor = [...F.dates].sort()[0];
+  const t = iso(today());
+  F.stripFrom = anchor && anchor < t ? anchor : t;
+  sheet.innerHTML = formHTML();
+  if (!sheet.open) sheet.showModal();
+  syncForm();
+}
+function datesStrip() {
+  const from = parseD(F.stripFrom), busy = new Set(S.entries.filter(e => e.id !== F.editId && statusOf(e) !== 'cancelled').map(e => e.date));
+  let h = '';
+  for (let i = 0; i < 28; i++) {
+    const d = addDays(from, i), k = iso(d), first = i === 0 || d.getDate() === 1;
+    h += `<button type="button" class="dchip ${busy.has(k) ? 'has' : ''}" data-act="fdate" data-d="${k}" aria-pressed="${F.dates.has(k)}" aria-label="${dLong(d)}${busy.has(k) ? ', already has something booked' : ''}">
+      <small>${k === iso(today()) ? 'Today' : DOW[d.getDay()]}</small><b>${d.getDate()}</b><em>${first ? MON[d.getMonth()] : '&nbsp;'}</em></button>`;
+  }
+  const extra = [...F.dates].filter(k => k < F.stripFrom || k > iso(addDays(from, 27))).sort();
+  return h + extra.map(k => `<button type="button" class="dchip" data-act="fdate" data-d="${k}" aria-pressed="true"><small>${DOW[parseD(k).getDay()]}</small><b>${parseD(k).getDate()}</b><em>${MON[parseD(k).getMonth()]}</em></button>`).join('');
+}
+function formHTML() {
+  const edit = !!F.editId;
+  return `<div class="sheet-in">
+    <div class="grab"></div>
+    <h2>${edit ? 'Edit' : 'Add to your roster'}</h2>
+    <div class="seg" role="group" aria-label="Type">
+      <button type="button" data-act="ftype" data-v="shift" aria-pressed="${F.type === 'shift'}">Work shift</button>
+      <button type="button" data-act="ftype" data-v="gym" aria-pressed="${F.type === 'gym'}">Gym</button></div>
+    <div class="fld" id="f-jobwrap"><span class="lab">Job</span><div class="chips" id="f-jobs">
+      ${visibleJobs().map(j => `<button type="button" class="chip job" style="--c:${esc(j.color)}" data-act="fjob" data-id="${j.id}" aria-pressed="false">${esc(j.name)}</button>`).join('')}
+      ${visibleJobs().length ? '' : '<span class="muted">Add a job in Settings first.</span>'}</div></div>
+    <div class="fld" id="f-tplwrap"><span class="lab">Your usual times <small>tap to fill in</small></span><div class="chips" id="f-tpl"></div></div>
+    <div class="fld"><span class="lab">${edit ? 'Day' : 'Days'} <small>${edit ? '' : 'tap every day you\'re on'}</small></span>
+      <div class="dates" id="f-dates">${datesStrip()}</div>
+      <label class="small" style="display:block;margin-top:4px;color:var(--ink-2)">Another date<input type="date" data-f="other"></label></div>
+    <div class="fld two"><label>Start<input type="time" data-f="start" value="${F.start}" required></label><label>Finish<input type="time" data-f="end" value="${F.end}" required></label></div>
+    <div class="fld" id="f-brkwrap"><span class="lab">Unpaid break</span><div class="chips" id="f-brk">
+      ${[0, 15, 30, 45, 60].map(m => `<button type="button" class="chip" data-act="fbrk" data-v="${m}" aria-pressed="false">${m ? m + ' min' : 'None'}</button>`).join('')}</div></div>
+    <details id="f-more"><summary>Pay rate and notes</summary>
+      <div class="two" style="margin-top:6px"><label id="f-ratewrap">Pay per hour<input type="number" inputmode="decimal" min="0" step="0.01" data-f="rate" value="${esc(F.rate)}"></label>
+      <label>Break (minutes)<input type="number" inputmode="numeric" min="0" max="600" step="5" data-f="brk" value="${F.brk}"></label></div>
+      <label style="display:block;margin-top:10px;font-weight:600;font-size:15px">Note<input type="text" data-f="note" maxlength="80" placeholder="e.g. bring name badge, cover for Sam" value="${esc(F.note)}"></label>
+    </details>
+    <div class="sum" id="f-sum"></div>
+    <div id="f-warn"></div>
+    <div class="stack" style="display:grid;gap:8px">
+      <button type="button" class="btn block hv" data-act="fsave" id="f-save">Save</button>
+      <button type="button" class="btn block ghost" data-act="close">Cancel</button></div>
+  </div>`;
+}
+function syncForm() {
+  if (!F) return;
+  const isGym = F.type === 'gym';
+  sheet.querySelectorAll('[data-act="ftype"]').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === F.type));
+  $('#f-jobwrap', sheet).hidden = isGym;
+  $('#f-ratewrap', sheet).hidden = isGym;
+  sheet.querySelectorAll('[data-act="fjob"]').forEach(b => b.setAttribute('aria-pressed', b.dataset.id === F.jobId));
+  sheet.querySelectorAll('[data-act="fbrk"]').forEach(b => b.setAttribute('aria-pressed', +b.dataset.v === +F.brk));
+  sheet.querySelectorAll('[data-act="fdate"]').forEach(b => b.setAttribute('aria-pressed', F.dates.has(b.dataset.d)));
+  const tp = templates(F.type);
+  $('#f-tplwrap', sheet).hidden = !tp.length;
+  $('#f-tpl', sheet).innerHTML = tp.map((e, i) => `<button type="button" class="chip tpl" data-act="ftpl" data-i="${i}" style="--c:${esc(jobOf(e).color)}">${isGym ? '' : esc(jobOf(e).name) + ' '}${fmtRange(e)}</button>`).join('');
+  F._tpl = tp;
+  // summary
+  const n = F.dates.size, probe = { type: F.type, start: F.start || '00:00', end: F.end || '00:00', brk: F.brk, rate: F.rate };
+  const hrs = hoursOf(probe), pay = payOf(probe);
+  const ok = F.start && F.end;
+  $('#f-sum', sheet).innerHTML = !ok ? '<span class="muted">Add a start and finish time.</span>' : isGym
+    ? `<b>${fmtRange(probe)}</b>${n > 1 ? `, ${n} sessions` : ''}`
+    : `<b>${fmtH(hrs)}</b>, <b>${money(pay)}</b>${n > 1 ? ` a shift, <b>${money(pay * n)}</b> for all ${n}` : ''}`;
+  // clash check
+  const warn = [];
+  if (ok) for (const d of [...F.dates].sort()) {
+    const c = { ...probe, date: d, id: '__probe' };
+    const s = +startDT(c), en = +endDT(c);
+    for (const e of S.entries) {
+      if (e.id === F.editId) continue;
+      const st = statusOf(e); if (st === 'cancelled' || st === 'missed') continue;
+      if (+startDT(e) < en && +endDT(e) > s) warn.push(`${dayLabel(d)}: overlaps ${esc(jobOf(e).name)} ${esc(fmtRange(e))}`);
+    }
+  }
+  $('#f-warn', sheet).innerHTML = warn.length ? `<div class="warnbox"><b>Heads up, this clashes</b><br>${warn.join('<br>')}</div>` : '';
+  const what = isGym ? (n > 1 ? `${n} gym sessions` : 'gym session') : (n > 1 ? `${n} shifts` : 'shift');
+  $('#f-save', sheet).textContent = F.editId ? 'Save changes' : n ? `Add ${what}` : 'Pick a day';
+  $('#f-save', sheet).disabled = !n || !ok || (!isGym && !F.jobId);
+}
+function applyJob(id) {
+  const j = S.jobs.find(x => x.id === id); if (!j) return;
+  F.jobId = id; F.rate = j.rate;
+  if (!F.editId) {
+    const l = lastFor('shift', id);
+    if (l) { F.start = l.start; F.end = l.end; F.brk = +l.brk || 0; }
+  }
+  setInputs();
+}
+function setInputs() {
+  const set = (f, v) => { const el = sheet.querySelector(`[data-f="${f}"]`); if (el) el.value = v; };
+  set('start', F.start); set('end', F.end); set('rate', F.rate); set('brk', F.brk);
+}
+function saveForm() {
+  if (!F || !F.dates.size || !F.start || !F.end) return;
+  const isGym = F.type === 'gym';
+  if (!isGym && !F.jobId) { toast('Pick a job'); return; }
+  const base = { type: F.type, jobId: isGym ? null : F.jobId, start: F.start, end: F.end, brk: Math.max(0, +F.brk || 0), rate: isGym ? 0 : Math.max(0, +F.rate || 0), note: (F.note || '').trim() };
+  if (F.editId) {
+    const e = S.entries.find(x => x.id === F.editId);
+    Object.assign(e, base, { date: [...F.dates][0], rev: (e.rev || 0) + 1 });
+    toast('Changes saved');
+  } else {
+    const ds = [...F.dates].sort();
+    for (const d of ds) S.entries.push({ id: uid(), date: d, status: null, rev: 0, ...base });
+    toast(isGym ? (ds.length > 1 ? `Added ${ds.length} gym sessions` : 'Gym session added') : (ds.length > 1 ? `Added ${ds.length} shifts` : 'Shift added'));
+    S.settings.welcomed = true;
+  }
+  save(); closeSheet(); render();
+}
+
+/* ---------- entry sheet ---------- */
+function openEntry(id) {
+  const e = S.entries.find(x => x.id === id); if (!e) return;
+  const j = jobOf(e), st = statusOf(e), started = new Date() >= startDT(e), clashes = findClashes();
+  sheet.innerHTML = `<div class="sheet-in"><div class="grab"></div>
+    <div class="entry-head" style="--c:${esc(j.color)}"><i></i><div><div class="t">${esc(j.name)}${tagFor(e, clashes)}</div>
+      <div class="s">${dLong(parseD(e.date))}, ${fmtRange(e)}</div>
+      <div class="s">${e.type === 'gym' ? 'Gym session' : `${fmtH(hoursOf(e))} at ${money(+e.rate)}/hr = <b>${money(payOf(e))}</b>${+e.brk ? `, ${e.brk} min unpaid break` : ''}`}</div>
+      ${e.note ? `<div class="s"><em>${esc(e.note)}</em></div>` : ''}</div></div>
+    <div class="fld"><span class="lab">${started ? (e.type === 'gym' ? 'Did you go?' : 'Did you work it?') : 'Status'}</span>
+    <div class="statusbtns">
+      <button class="btn w" data-act="status" data-id="${e.id}" data-v="done" aria-pressed="${st === 'done'}" ${started ? '' : 'disabled'}>${e.type === 'gym' ? 'Went' : 'Worked'}</button>
+      <button class="btn m" data-act="status" data-id="${e.id}" data-v="missed" aria-pressed="${st === 'missed'}">Missed</button>
+      <button class="btn c" data-act="status" data-id="${e.id}" data-v="cancelled" aria-pressed="${st === 'cancelled'}">Cancelled</button></div>
+    ${e.status ? `<button class="linkbtn small" data-act="status" data-id="${e.id}" data-v="">Clear status</button>` : `<p class="hint" style="margin:0">${started ? (S.settings.autoDone ? 'Counted as worked automatically.' : '') : 'Use Cancelled if the shift was taken off you. Its pay is removed from your totals.'}</p>`}</div>
+    <div class="stack" style="display:grid;gap:8px">
+      <button class="btn" data-act="edit" data-id="${e.id}">Edit</button>
+      <button class="btn ghost" data-act="dup" data-id="${e.id}">Copy to other days</button>
+      <button class="btn ghost" data-act="cal1" data-id="${e.id}">Add to my calendar</button>
+      <button class="btn danger" data-act="del" data-id="${e.id}">Delete</button></div></div>`;
+  if (!sheet.open) sheet.showModal();
+}
+
+/* ---------- actions ---------- */
+const A = {
+  go: el => { closeSheet(); go(el.dataset.v); },
+  add: el => openAdd({ date: el.dataset.d }),
+  entry: el => openEntry(el.dataset.id),
+  close: () => closeSheet(),
+  wk: el => { const v = +el.dataset.v; weekOffset = v === 0 ? 0 : weekOffset + v; render(); },
+  gotoWeek: el => { view = 'week'; weekOffset = +el.dataset.off; history.replaceState(null, '', '#week'); render(); window.scrollTo(0, 0); },
+  welcomed: () => { S.settings.welcomed = true; save(); render(); },
+  ftype: el => { F.type = el.dataset.v; if (F.type === 'gym') { const l = lastFor('gym'); F.start = l ? l.start : '17:00'; F.end = l ? l.end : '18:00'; F.brk = 0; } else if (F.jobId) applyJob(F.jobId); setInputs(); syncForm(); },
+  fjob: el => { applyJob(el.dataset.id); syncForm(); },
+  ftpl: el => { const e = F._tpl[+el.dataset.i]; if (!e) return; if (e.type === 'shift') { F.jobId = e.jobId; const j = S.jobs.find(x => x.id === e.jobId); if (j) F.rate = j.rate; } F.start = e.start; F.end = e.end; F.brk = +e.brk || 0; setInputs(); syncForm(); },
+  fdate: el => { const k = el.dataset.d; if (F.editId) F.dates = new Set([k]); else F.dates.has(k) ? F.dates.delete(k) : F.dates.add(k); syncForm(); },
+  fbrk: el => { F.brk = +el.dataset.v; setInputs(); syncForm(); },
+  fsave: () => saveForm(),
+  status: el => {
+    const e = S.entries.find(x => x.id === el.dataset.id); if (!e) return;
+    const v = el.dataset.v || null;
+    e.status = e.status === v ? null : v; e.rev = (e.rev || 0) + 1;
+    save(); toast(!e.status ? 'Status cleared' : { done: e.type === 'gym' ? 'Marked as went' : 'Marked as worked', missed: 'Marked as missed', cancelled: 'Marked as cancelled' }[e.status]);
+    openEntry(e.id); render();
+  },
+  edit: el => openAdd({ editId: el.dataset.id }),
+  dup: el => openAdd({ copyId: el.dataset.id }),
+  del: el => {
+    const e = S.entries.find(x => x.id === el.dataset.id); if (!e) return;
+    if (!confirm(`Delete ${jobOf(e).name} on ${dShort(parseD(e.date))}?`)) return;
+    S.entries = S.entries.filter(x => x.id !== e.id); save(); closeSheet(); render(); toast('Deleted');
+  },
+  cal1: el => { const e = S.entries.find(x => x.id === el.dataset.id); if (e) download(`${jobOf(e).name.replace(/\W+/g, '-')}-${e.date}.ics`, ics([e]), 'text/calendar'); },
+  calAll: () => {
+    const now = new Date(), list = S.entries.filter(e => endDT(e) > now && !['cancelled', 'missed'].includes(statusOf(e))).sort(byStart);
+    if (!list.length) { toast('No upcoming shifts to add'); return; }
+    download(`my-shifts-${iso(today())}.ics`, ics(list), 'text/calendar'); toast(`${list.length} upcoming added to the calendar file`);
+  },
+  backup: () => {
+    S.settings.lastBackup = new Date().toISOString(); save();
+    download(`my-shifts-backup-${iso(today())}.json`, JSON.stringify(S, null, 1), 'application/json');
+    toast('Backup downloaded'); render();
+  },
+  restore: () => $('#restoreFile').click(),
+  csv: () => { if (!S.entries.length) { toast('Nothing to export yet'); return; } download(`my-shifts-${iso(today())}.csv`, '\ufeff' + csv(), 'text/csv'); },
+  erase: () => {
+    if (!confirm('Erase every shift and setting on this phone? This cannot be undone.')) return;
+    S = DEFAULT(); save(); go('today'); toast('Everything erased');
+  },
+  gymToday: () => {
+    const now = new Date(), m = now.getHours() * 60 + now.getMinutes(), s = Math.max(0, m - 60);
+    S.entries.push({ id: uid(), type: 'gym', jobId: null, date: iso(today()), start: hhmm(s), end: hhmm(Math.max(m, s + 1)), brk: 0, rate: 0, note: '', status: 'done', rev: 0 });
+    save(); render(); toast('Gym session logged');
+  },
+  toggleAuto: () => { S.settings.autoDone = !S.settings.autoDone; save(); render(); },
+  addJob: () => {
+    const used = new Set(S.jobs.map(j => j.color.toUpperCase()));
+    S.jobs.push({ id: uid(), name: 'New job', rate: 25, color: JOB_COLORS.find(c => !used.has(c.toUpperCase())) || '#495057' });
+    save(); render();
+    const inputs = document.querySelectorAll('[data-job="name"]'); const last = inputs[inputs.length - 1]; if (last) { last.focus(); last.select(); }
+  },
+  removeJob: el => {
+    const j = S.jobs.find(x => x.id === el.dataset.id); if (!j) return;
+    const used = S.entries.some(e => e.jobId === j.id);
+    if (used) { if (!confirm(`Hide ${j.name}? Its past shifts and pay stay in your history.`)) return; j.hidden = true; }
+    else { if (!confirm(`Remove ${j.name}?`)) return; S.jobs = S.jobs.filter(x => x.id !== j.id); }
+    save(); render();
+  },
+  showJob: el => { const j = S.jobs.find(x => x.id === el.dataset.id); if (j) { j.hidden = false; save(); render(); } },
+  install: async () => { if (!deferredInstall) return; deferredInstall.prompt(); try { await deferredInstall.userChoice; } catch (e) {} deferredInstall = null; render(); }
+};
+document.addEventListener('click', ev => {
+  const el = ev.target.closest('[data-act]');
+  if (!el || el.disabled) return;
+  const fn = A[el.dataset.act];
+  if (fn) { ev.preventDefault(); fn(el, ev); }
+});
+
+/* form fields inside the sheet */
+sheet.addEventListener('input', ev => {
+  const f = ev.target.dataset.f; if (!f || !F) return;
+  if (f === 'start' || f === 'end') F[f] = ev.target.value;
+  else if (f === 'rate') F.rate = ev.target.value;
+  else if (f === 'brk') F.brk = +ev.target.value || 0;
+  else if (f === 'note') F.note = ev.target.value;
+  else return;
+  syncForm();
+});
+sheet.addEventListener('change', ev => {
+  if (ev.target.dataset.f !== 'other' || !F || !ev.target.value) return;
+  const k = ev.target.value;
+  if (F.editId) F.dates = new Set([k]); else F.dates.add(k);
+  if (k < F.stripFrom) F.stripFrom = k;
+  $('#f-dates', sheet).innerHTML = datesStrip(); ev.target.value = ''; syncForm();
+});
+
+/* settings fields */
+document.addEventListener('change', ev => {
+  const el = ev.target;
+  if (el.dataset.s) {
+    const k = el.dataset.s, v = Math.max(0, +el.value || 0);
+    S.settings[k] = v; save(); if (view === 'settings') render(); toast('Saved');
+  } else if (el.dataset.job) {
+    const j = S.jobs.find(x => x.id === el.dataset.id); if (!j) return;
+    if (el.dataset.job === 'name') j.name = el.value.trim() || j.name;
+    if (el.dataset.job === 'color') j.color = el.value;
+    if (el.dataset.job === 'rate') {
+      const old = +j.rate, nv = Math.max(0, +el.value || 0); j.rate = nv;
+      const t = iso(today()); let n = 0;
+      for (const e of S.entries) if (e.jobId === j.id && e.date >= t && !e.status && +e.rate === old && old !== nv) { e.rate = nv; n++; }
+      save(); render(); toast(n ? `New rate saved and applied to ${n} upcoming ${n === 1 ? 'shift' : 'shifts'}` : 'New rate saved'); return;
+    }
+    save(); render(); toast('Saved');
+  }
+});
+$('#restoreFile').addEventListener('change', async ev => {
+  const file = ev.target.files && ev.target.files[0]; ev.target.value = '';
+  if (!file) return;
+  try {
+    const d = JSON.parse(await file.text());
+    if (!d || !Array.isArray(d.entries) || !Array.isArray(d.jobs)) throw new Error('bad');
+    if (!confirm(`Replace what's on this phone with this backup (${d.entries.length} shifts and gym sessions)?`)) return;
+    S = migrate(d); S.settings.welcomed = true; save(); go('today'); toast('Backup restored');
+  } catch (e) { toast("That file isn't a My Shifts backup."); }
+});
+
+/* ---------- boot ---------- */
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredInstall = e; if (view === 'settings') render(); });
+window.addEventListener('hashchange', () => { const v = location.hash.slice(1); if (VIEWS[v] && v !== view) { closeSheet(); view = v; if (v === 'week') weekOffset = 0; render(); } });
+window.addEventListener('storage', ev => { if (ev.key === KEY) { S = load(); render(); } });
+const idle = () => !sheet.open && !(document.activeElement && document.activeElement.matches('input,select,textarea'));
+setInterval(() => { if (idle() && (view === 'today' || view === 'week')) render(); }, 60000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden && idle()) render(); });
+view = VIEWS[location.hash.slice(1)] ? location.hash.slice(1) : 'today';
+render();
+if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
+</script>
+</body>
+</html>
